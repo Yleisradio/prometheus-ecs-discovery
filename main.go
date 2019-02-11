@@ -531,7 +531,8 @@ func GetAugmentedTasks(svc *ecs.ECS, svcec2 *ec2.EC2, clusterArns []*string) ([]
 	return tasks, nil
 }
 
-func runDiscovery(config *aws.Config, infos []*PrometheusTaskInfo) []*PrometheusTaskInfo {
+func runDiscovery(config *aws.Config) []*PrometheusTaskInfo {
+	infos := []*PrometheusTaskInfo{}
 	// Initialise AWS Service clients
 	svc := ecs.New(*config)
 	svcec2 := ec2.New(*config)
@@ -580,10 +581,13 @@ func main() {
 					return
 				}
 				config.Credentials = stscreds.NewAssumeRoleProvider(stsSvc, arn)
-				infos = runDiscovery(&config, infos)
+				result := runDiscovery(&config)
+				if result != nil {
+					infos = append(infos, result...)
+				}
 			}
 		} else {
-			infos = runDiscovery(&defaultConfig, infos)
+			infos = runDiscovery(&defaultConfig)
 		}
 		m, err := yaml.Marshal(infos)
 		if err != nil {
